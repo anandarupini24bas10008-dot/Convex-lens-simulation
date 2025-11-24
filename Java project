@@ -1,0 +1,98 @@
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.ScatterChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.stage.Stage;
+
+public class ConvexLensSimulation1 extends Application {
+
+    @Override
+    public void start(Stage primaryStage) {
+        // Create input fields
+        Label focalLengthLabel = new Label("Focal Length (mm):");
+        TextField focalLengthField = new TextField();
+        Label apertureDiameterLabel = new Label("Aperture Diameter (mm):");
+        TextField apertureDiameterField = new TextField();
+
+        // Create button to simulate lens
+        javafx.scene.control.Button simulateButton = new javafx.scene.control.Button("Simulate Lens");
+        simulateButton.setOnAction(e -> {
+            try {
+                double focalLength = Double.parseDouble(focalLengthField.getText());
+                double apertureDiameter = Double.parseDouble(apertureDiameterField.getText());
+
+                // Create simulation pane
+                Pane simulationPane = new Pane();
+                simulationPane.setPrefSize(800, 600);
+
+                // Draw lens
+                Circle lens = new Circle(400, 300, apertureDiameter / 2);
+                simulationPane.getChildren().add(lens);
+
+                // Simulate light rays
+                for (int i = -10; i <= 10; i++) {
+                    // Incident ray
+                    Line incidentRay = new Line(400 + i * 10, 0, 400 + i * 10, 300);
+                    simulationPane.getChildren().add(incidentRay);
+
+                    // Refract ray at lens
+                    double angle = Math.atan2(300 - 0, 400 + i * 10 - 400);
+                    double refractedAngle = Math.asin(Math.sin(angle) / 1.5); // assuming n=1.5 for lens material
+                    double focalPointX = 400 + (300 - 300) * Math.tan(refractedAngle);
+                    double focalPointY = 300 + Math.abs((400 + i * 10) - 400) * Math.tan(refractedAngle);
+                    if (i < 0) {
+                        focalPointX = 400 - Math.abs((400 + i * 10) - 400) * Math.tan(refractedAngle);
+                    }
+                    Line refractedRay = new Line(400 + i * 10, 300, focalPointX, focalPointY + 300);
+                    simulationPane.getChildren().add(refractedRay);
+                }
+
+                // Create spot diagram
+                ScatterChart<Number, Number> spotDiagram = new ScatterChart<>(new NumberAxis(), new NumberAxis());
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                for (int i = -10; i <= 10; i++) {
+                    double angle = Math.atan2(300 - 0, 400 + i * 10 - 400);
+                    double refractedAngle = Math.asin(Math.sin(angle) / 1.5); // assuming n=1.5 for lens material
+                    double focalPointX = 400 + focalLength * Math.cos(refractedAngle);
+                    double focalPointY = 300 + focalLength * Math.sin(refractedAngle);
+                    series.getData().add(new XYChart.Data<>(focalPointX, focalPointY));
+                }
+                spotDiagram.getData().add(series);
+
+                // Show simulation and spot diagram
+                Stage simulationStage = new Stage();
+                simulationStage.setScene(new Scene(simulationPane));
+                simulationStage.show();
+
+                Stage spotDiagramStage = new Stage();
+                spotDiagramStage.setScene(new Scene(spotDiagram, 400, 400));
+                spotDiagramStage.show();
+            } catch (NumberFormatException ex) {
+                System.out.println("Invalid input");
+            }
+        });
+
+        // Create layout
+        VBox inputBox = new VBox(10);
+        inputBox.getChildren().addAll(focalLengthLabel, focalLengthField, apertureDiameterLabel, apertureDiameterField, simulateButton);
+        inputBox.setAlignment(Pos.CENTER);
+        inputBox.setPadding(new Insets(10));
+        Scene scene = new Scene(inputBox, 300, 200);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+}
+}
